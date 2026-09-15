@@ -1,0 +1,172 @@
+### ROCKOLA - API HTTP/JSON
+### Colección de pruebas para VS Code REST Client o JetBrains HTTP Client.
+###
+### 1. Iniciar el Core (sin argumentos):
+###    .\rockola-core.exe
+###
+### 2. Ejecutar cada bloque con "Send Request".
+###
+### Algunos endpoints dependen del estado de la base de datos (IDs de
+### canciones y de cola). Ajusta los valores según tu catálogo.
+
+@host = http://127.0.0.1:8080
+
+########################################
+# HEALTH
+########################################
+
+### Estado del servidor
+GET {{host}}/api/health
+Accept: application/json
+
+########################################
+# CATÁLOGO
+########################################
+
+### Listar todas las canciones
+GET {{host}}/api/songs
+Accept: application/json
+
+### Buscar canciones por título, artista, álbum o género
+GET {{host}}/api/songs/search?q=alec
+Accept: application/json
+
+### Obtener una canción por ID (valida que su archivo exista)
+GET {{host}}/api/songs/3
+Accept: application/json
+
+### Listar artistas
+GET {{host}}/api/artists
+Accept: application/json
+
+### Listar álbumes
+GET {{host}}/api/albums
+Accept: application/json
+
+### Listar géneros
+GET {{host}}/api/genres
+Accept: application/json
+
+########################################
+# ESCANEO DE CARPETAS
+########################################
+
+### Escanear una carpeta de música y registrar canciones
+### Nota: en JSON, usa doble barra invertida para las rutas Windows.
+POST {{host}}/api/catalog/scan
+Content-Type: application/json
+
+{
+  "path": "C:\\Users\\river\\Music"
+}
+
+########################################
+# CRÉDITOS
+########################################
+
+### Consultar saldo
+GET {{host}}/api/credits
+Accept: application/json
+
+### Agregar créditos (simulado)
+POST {{host}}/api/credits/add
+Content-Type: application/json
+
+{
+  "amount": 5
+}
+
+### Consumir un crédito manualmente
+POST {{host}}/api/credits/consume
+Content-Type: application/json
+
+{}
+
+########################################
+# COLA
+########################################
+
+### Ver la cola activa
+GET {{host}}/api/queue
+Accept: application/json
+
+### Agregar canción a la cola (consume 1 crédito)
+POST {{host}}/api/queue
+Content-Type: application/json
+
+{
+  "song_id": 1
+}
+
+### Cancelar una entrada de cola (id numérico de la entrada)
+DELETE {{host}}/api/queue/9
+Accept: application/json
+
+### Vaciar la cola activa (detiene el player primero)
+DELETE {{host}}/api/queue
+Accept: application/json
+
+########################################
+# PLAYER
+########################################
+
+### Estado actual del reproductor
+GET {{host}}/api/player
+Accept: application/json
+
+### Reproducir la primera canción pendiente de la cola
+POST {{host}}/api/player/play
+Content-Type: application/json
+
+{}
+
+### Pausar
+POST {{host}}/api/player/pause
+Content-Type: application/json
+
+{}
+
+### Reanudar
+POST {{host}}/api/player/resume
+Content-Type: application/json
+
+{}
+
+### Detener (marca la canción actual como cancelada)
+POST {{host}}/api/player/stop
+Content-Type: application/json
+
+{}
+
+### Completar la actual y reproducir la siguiente (manual)
+POST {{host}}/api/player/next
+Content-Type: application/json
+
+{}
+
+### Ajustar volumen (0.0 a 1.0)
+POST {{host}}/api/player/volume
+Content-Type: application/json
+
+{
+  "volume": 0.75
+}
+
+########################################
+# FLUJO COMPLETO DE DEMOSTRACIÓN
+########################################
+
+### 1. Agregar créditos
+# POST {{host}}/api/credits/add   {"amount": 5}
+
+### 2. Agregar canciones a la cola (repítelo por canción)
+# POST {{host}}/api/queue         {"song_id": 1}
+
+### 3. Reproducir
+# POST {{host}}/api/player/play
+
+### 4. Ver el estado
+# GET  {{host}}/api/player
+
+### 5. Avanzar a la siguiente canción
+# POST {{host}}/api/player/next

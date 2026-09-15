@@ -23,3 +23,22 @@ go.work.sum
 
 # env file
 .env
+
+# Binarios
+rockola-core.exe
+rockola-core
+*.exe~
+
+# Base de datos local (se genera automáticamente)
+rockola.db
+rockola.db-shm
+rockola.db-wal
+
+# Salidas de pruebas y cobertura
+*.out
+*.log
+
+# Sistema operativo
+Thumbs.db
+Desktop.ini
+.DS_Store
