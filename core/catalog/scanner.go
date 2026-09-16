@@ -134,10 +134,10 @@ func (sc *Scanner) ScanMusicFolder(ctx context.Context, path string) (*ScanResul
 // validateScanPath canonaliza y valida el path solicitado para el escaneo.
 // Previene CWE-22 / go/path-injection:
 //
-//   - Rechaza entradas vacías, con byte nulo o no limpias.
+//   - Rechaza entradas vacías y con byte nulo.
 //   - Usa filepath.Clean + filepath.Abs + filepath.EvalSymlinks para obtener
 //     la ruta canónica y resolver "..", "." y symlinks.
-//   - Verifica que la ruta canónica existe y es accesible.
+//   - Restringe el escaneo a un directorio raíz seguro (ROCKOLA_MUSIC_ROOT).
 //   - Retorna la ruta absoluta y evaluada lista para usar con os.Stat/WalkDir.
 func (sc *Scanner) validateScanPath(input string) (string, error) {
 	trimmed := strings.TrimSpace(input)
@@ -155,9 +155,6 @@ func (sc *Scanner) validateScanPath(input string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("ruta inválida: %w", err)
 	}
-	// Abs ya elimina ".." pero si el input original intentaba traversal,
-	// cleaned != trimmed puede indicar intento; no lo bloqueamos si el
-	// resultado canónico es válido, pero sí verificamos el resultado.
 	abs = filepath.Clean(abs)
 
 	// Resolver symlinks para evitar bypass (ej: /music/link -> /etc).
@@ -172,12 +169,34 @@ func (sc *Scanner) validateScanPath(input string) (string, error) {
 		}
 	}
 
-	// Validación final: debe ser absoluta y limpia.
+	// Validación final de forma.
 	if !filepath.IsAbs(real) {
 		return "", fmt.Errorf("ruta inválida: debe ser absoluta: %s", input)
 	}
 	if real == "" {
 		return "", fmt.Errorf("ruta inválida: vacía tras normalizar")
+	}
+
+	// Restringir escaneo a raíz permitida.
+	allowedRoot := strings.TrimSpace(os.Getenv("ROCKOLA_MUSIC_ROOT"))
+	if allowedRoot == "" {
+		allowedRoot = "."
+	}
+	allowedAbs, err := filepath.Abs(filepath.Clean(allowedRoot))
+	if err != nil {
+		return "", fmt.Errorf("configuración inválida de ROCKOLA_MUSIC_ROOT: %w", err)
+	}
+	allowedReal, err := filepath.EvalSymlinks(allowedAbs)
+	if err != nil {
+		if os.IsNotExist(err) {
+			allowedReal = allowedAbs
+		} else {
+			return "", fmt.Errorf("configuración inválida de ROCKOLA_MUSIC_ROOT: %w", err)
+		}
+	}
+
+	if !isWithinRoot(allowedReal, real) {
+		return "", fmt.Errorf("ruta fuera del directorio permitido")
 	}
 
 	return real, nil
