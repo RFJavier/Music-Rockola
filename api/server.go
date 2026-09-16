@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"rockola/core/catalog"
@@ -150,8 +151,12 @@ func (s *Server) scanMusic(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, err)
 		return
 	}
-	if request.Path == "" {
+	if strings.TrimSpace(request.Path) == "" {
 		s.writeError(w, badRequest("path es obligatorio"))
+		return
+	}
+	if strings.Contains(request.Path, "\x00") {
+		s.writeError(w, badRequest("path inválido: contiene carácter nulo"))
 		return
 	}
 	result, err := s.scanner.ScanMusicFolder(r.Context(), request.Path)
