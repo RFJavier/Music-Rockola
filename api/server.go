@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -159,7 +160,20 @@ func (s *Server) scanMusic(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, badRequest("path inválido: contiene carácter nulo"))
 		return
 	}
-	result, err := s.scanner.ScanMusicFolder(r.Context(), request.Path)
+
+	cleaned := filepath.Clean(strings.TrimSpace(request.Path))
+	if !filepath.IsAbs(cleaned) {
+		s.writeError(w, badRequest("path inválido: debe ser absoluto"))
+		return
+	}
+	for _, part := range strings.Split(cleaned, string(filepath.Separator)) {
+		if part == ".." {
+			s.writeError(w, badRequest("path inválido: contiene referencias a directorio padre"))
+			return
+		}
+	}
+
+	result, err := s.scanner.ScanMusicFolder(r.Context(), cleaned)
 	if err != nil {
 		s.writeError(w, badRequest(err.Error()))
 		return
