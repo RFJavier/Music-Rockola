@@ -161,16 +161,20 @@ func (s *Server) scanMusic(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cleaned := filepath.Clean(strings.TrimSpace(request.Path))
-	if !filepath.IsAbs(cleaned) {
-		s.writeError(w, badRequest("path inválido: debe ser absoluto"))
-		return
-	}
-	for _, part := range strings.Split(cleaned, string(filepath.Separator)) {
+	trimmed := strings.TrimSpace(request.Path)
+	for _, part := range strings.FieldsFunc(trimmed, func(r rune) bool {
+		return r == '/' || r == '\\'
+	}) {
 		if part == ".." {
 			s.writeError(w, badRequest("path inválido: contiene referencias a directorio padre"))
 			return
 		}
+	}
+
+	cleaned := filepath.Clean(trimmed)
+	if !filepath.IsAbs(cleaned) {
+		s.writeError(w, badRequest("path inválido: debe ser absoluto"))
+		return
 	}
 
 	result, err := s.scanner.ScanMusicFolder(r.Context(), cleaned)

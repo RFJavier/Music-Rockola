@@ -140,6 +140,7 @@ func TestPlayerAPIAdvancesQueue(t *testing.T) {
 
 func TestAPIValidation(t *testing.T) {
 	handler, _, _ := testHandler(t)
+	parentPath := t.TempDir() + string(filepath.Separator) + ".." + string(filepath.Separator) + "music"
 	tests := []struct {
 		method string
 		path   string
@@ -150,6 +151,9 @@ func TestAPIValidation(t *testing.T) {
 		{http.MethodPost, "/api/queue", map[string]any{"song_id": -1}},
 		{http.MethodPost, "/api/player/volume", map[string]any{"volume": 2}},
 		{http.MethodDelete, "/api/queue/no-es-id", nil},
+		{http.MethodPost, "/api/catalog/scan", map[string]any{"path": "music"}},
+		{http.MethodPost, "/api/catalog/scan", map[string]any{"path": parentPath}},
+		{http.MethodPost, "/api/catalog/scan", map[string]any{"path": "C:\\music/../secrets"}},
 	}
 	for _, test := range tests {
 		response := request(t, handler, test.method, test.path, test.body)
@@ -194,6 +198,7 @@ func TestPlayerNaturalEndIsNotAnMCIError(t *testing.T) {
 
 func testHandler(t *testing.T) (http.Handler, *sql.DB, *fakePlayer) {
 	t.Helper()
+	t.Setenv("ROCKOLA_MUSIC_ROOT", os.TempDir())
 	ctx := context.Background()
 	db, err := storage.Open(ctx, filepath.Join(t.TempDir(), "rockola.db"))
 	if err != nil {
